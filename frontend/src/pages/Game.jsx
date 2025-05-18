@@ -5,15 +5,15 @@ import Grid from '../components/Grid';
 function Game() {
   const { gameId } = useParams();
   const [gameState, setGameState] = useState({
-    players: [{ id: 'P1', row: 0, col: 0, direction: 'right' }],
+    players: [{ id: 'P1', row: 0, col: 0, direction: 'right', score: 0 }], // Add score
     glowPoints: [{ row: 10, col: 10 }],
   });
 
   const [mockWebSocket, setMockWebSocket] = useState(null);
-  const gameStateRef = useRef(gameState); // Ref to store the latest game state
+  const gameStateRef = useRef(gameState);
 
   useEffect(() => {
-    gameStateRef.current = gameState; // Sync ref on each render
+    gameStateRef.current = gameState;
   }, [gameState]);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ function Game() {
               : player
           );
         }
-        if (message.action === 'moveGlow(20,20)') {
+        if (message.action === 'moveGlow') { // Fixed action name
           newGameState.glowPoints = newGameState.glowPoints.map(glowPoint => {
             return { ...glowPoint, row: message.row, col: message.col };
           });
@@ -59,17 +59,41 @@ function Game() {
       newGameState.players = newGameState.players.map(player => {
         let { row, col, direction } = player;
         if (direction === 'up') row = (row - 1 + 50) % 50;
-      if (direction === 'down') row = (row + 1) % 50;
-      if (direction === 'left') col = (col - 1 + 50) % 50;
-      if (direction === 'right') col = (col + 1) % 50;
+        if (direction === 'down') row = (row + 1) % 50;
+        if (direction === 'left') col = (col - 1 + 50) % 50;
+        if (direction === 'right') col = (col + 1) % 50;
         return { ...player, row, col };
       });
+
+      // Check for glow point collection
+      newGameState.players = newGameState.players.map(player => {
+        const collectedGlowPoint = newGameState.glowPoints.find(
+          g => g.row === player.row && g.col === player.col
+        );
+        if (collectedGlowPoint) {
+          // Increment player's score
+          return { ...player, score: player.score + 1 };
+        }
+        return player;
+      });
+
+      // Remove collected glow points
+      newGameState.glowPoints = newGameState.glowPoints.filter(g => {
+        return !newGameState.players.some(p => p.row === g.row && p.col === g.col);
+      });
+
+      // If no glow points remain, spawn a new one at a random position
+      if (newGameState.glowPoints.length === 0) {
+        const newRow = Math.floor(Math.random() * 50);
+        const newCol = Math.floor(Math.random() * 50);
+        newGameState.glowPoints.push({ row: newRow, col: newCol });
+      }
 
       setGameState(newGameState);
     }, 100);
 
     return () => clearInterval(interval);
-  }, []); // Run once
+  }, []);
 
   useEffect(() => {
     const handleKey = (event) => {
@@ -94,7 +118,7 @@ function Game() {
         action = { action: 'changeDirection', playerId: 'P2', direction: newDir };
       }
       if (['g', 'G'].includes(key)) {
-        action = { action: 'moveGlow(20,20)', row: 19, col: 19};
+        action = { action: 'moveGlow', row: 19, col: 19 }; // Fixed action name
       }
       if (action && mockWebSocket) {
         mockWebSocket.send(JSON.stringify(action));
@@ -122,7 +146,7 @@ function Game() {
       if (alreadyHasP2) return prevState;
       return {
         ...prevState,
-        players: [...prevState.players, { id: 'P2', row: 1, col: 1, direction: 'right' }],
+        players: [...prevState.players, { id: 'P2', row: 1, col: 1, direction: 'right', score: 0 }], // Add score
       };
     });
   };
@@ -131,46 +155,34 @@ function Game() {
   const p2 = gameState.players.find(p => p.id === 'P2');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-5xl transition-all duration-300">
-        <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">
-          Game ID: <span className="text-indigo-600">{gameId}</span>
-        </h1>
-
-        <div className="mb-6 text-center">
-          <p className="text-lg text-gray-700 mb-4">
-            <span className="font-semibold">Direction:</span> P1: <span className="text-blue-600">{p1?.direction || 'N/A'}</span>, 
-            P2: <span className="text-pink-600">{p2?.direction || 'N/A'}</span>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">Game ID: {gameId}</h1>
+        <div className="mb-4">
+          <p className="mb-2 text-gray-700">
+            Direction: P1: {p1?.direction || 'N/A'}, P2: {p2?.direction || 'N/A'}
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <button
-              onClick={() => movePlayer(5, 5)}
-              className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300 transition"
-            >
+          <p className="mb-2 text-gray-700">
+            Score: P1: {p1?.score || 0}, P2: {p2?.score || 0} {/* Display scores */}
+          </p>
+          <div className="flex space-x-3">
+            <button onClick={() => movePlayer(5, 5)} className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition">
               Move P1 to (5,5)
             </button>
-            <button
-              onClick={() => movePlayer(0, 0)}
-              className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-300 transition"
-            >
+            <button onClick={() => movePlayer(0, 0)} className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition">
               Move P1 to (0,0)
             </button>
-            <button
-              onClick={addPlayer2}
-              className="bg-green-500 text-white px-5 py-2 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition"
-            >
+            <button onClick={addPlayer2} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
               Add Player P2
             </button>
           </div>
         </div>
-
-        <div className="border border-gray-300 rounded-xl overflow-hidden p-4 bg-gray-50">
-          <Grid cellSize="5" players={gameState.players} glowPoints={gameState.glowPoints} />
+        <div className="border border-gray-300 p-2 rounded-lg">
+          <Grid cellSize="3" players={gameState.players} glowPoints={gameState.glowPoints} />
         </div>
       </div>
     </div>
   );
-
 }
 
 export default Game;
