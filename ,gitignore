@@ -1,0 +1,68 @@
+# General
+*.log
+*.env
+*.env.*
+.envrc
+.DS_Store
+.vscode/
+.idea/
+__pycache__/
+*.py[cod]
+.Python
+*.sqlite3
+
+# Node modules (React)
+frontend/node_modules/
+frontend/build/
+frontend/.next/
+frontend/.turbo/
+frontend/.cache/
+
+# FastAPI (Python)
+backend/__pycache__/
+backend/*.pyc
+backend/instance/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.coverage
+backend/.pylint.d/
+backend/venv/
+backend/env/
+backend/.venv/
+backend/.env
+backend/.env.*
+
+# Testing/coverage
+htmlcov/
+coverage.xml
+*.cover
+.tox/
+nosetests.xml
+.testmondata
+
+# OS-specific
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# Docker
+**/Dockerfile
+**/docker-compose.yml
+**/docker-compose.override.yml
+**/*.pid
+
+# PyInstaller
+*.spec
+
+# Jupyter
+*.ipynb_checkpoints
+
+# Yarn / pnpm / npm
+frontend/yarn.lock
+frontend/pnpm-lock.yaml
+frontend/package-lock.json
+
+# Build
+dist/
+build/
