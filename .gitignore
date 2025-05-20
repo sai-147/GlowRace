@@ -66,3 +66,25 @@ frontend/package-lock.json
 # Build
 dist/
 build/
+
+
+# C++ Server
+cpp/build/
+cpp/bin/
+cpp/obj/
+cpp/CMakeFiles/
+cpp/CMakeCache.txt
+cpp/Makefile
+cpp/*.o
+cpp/*.out
+cpp/*.exe
+cpp/*.a
+cpp/*.so
+cpp/*.dll
+cpp/*.dSYM/
+cpp/.vscode/
+cpp/.idea/
+cpp/.clang-format
+cpp/.clangd/
+cpp/.ccls-cache/
+cpp/.cache/
