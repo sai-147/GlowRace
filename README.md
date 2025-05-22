@@ -13,3 +13,5 @@ A Slither.io-inspired multiplayer game with real-time gameplay for 2-10 players.
 - **Day 9**: Installed Tailwind CSS via npm, styled Home, Game, and Results pages with consistent design.
 - **Day 10**: Added game logic for glow point collection, implemented score tracking and random glow point spawning.
 - **Day 11**: Set up FastAPI backend with WebSocket support, connected React frontend to FastAPI.
+- **Day 12**: Built a basic C++ HTTP server to handle game actions, integrated with FastAPI to process WebSocket messages.
+- **Day 13**: Updated FastAPI to broadcast game state to all players in a game session, tested multiplayer with multiple browser tabs.
