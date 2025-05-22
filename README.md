@@ -15,3 +15,5 @@ A Slither.io-inspired multiplayer game with real-time gameplay for 2-10 players.
 - **Day 11**: Set up FastAPI backend with WebSocket support, connected React frontend to FastAPI.
 - **Day 12**: Built a basic C++ HTTP server to handle game actions, integrated with FastAPI to process WebSocket messages.
 - **Day 13**: Updated FastAPI to broadcast game state to all players in a game session, tested multiplayer with multiple browser tabs.
+- **Day 14**: Integrated Redis to persist game state, enabling state saving/loading for new players and server restarts.
+- **Day 15**: Moved game logic to the C++ server, making it the authoritative source of truth; frontend now renders the server’s state. Updated Grid.jsx to render the game state received from Game.jsx.

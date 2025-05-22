@@ -6,6 +6,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(server server.cpp)
 
-# Link pthread (required for cpp-httplib on some systems)
 find_package(Threads REQUIRED)
 target_link_libraries(server Threads::Threads)
