@@ -1,60 +1,85 @@
+import React, { useEffect, useRef } from 'react';
+
 const Grid = ({ gameState }) => {
-    const gridSize = 50;
-    const cellSize = 10; // px
+    const canvasRef = useRef(null);
+    const GRID_SIZE = 50;
+    const CELL_SIZE = 10;
+
+    useEffect(() => {
+        if (!gameState || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid lines
+        ctx.strokeStyle = '#ddd';
+        for (let i = 0; i <= GRID_SIZE; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * CELL_SIZE, 0);
+            ctx.lineTo(i * CELL_SIZE, GRID_SIZE * CELL_SIZE);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i * CELL_SIZE);
+            ctx.lineTo(GRID_SIZE * CELL_SIZE, i * CELL_SIZE);
+            ctx.stroke();
+        }
+
+        // Draw glow points
+        gameState.glowPoints.forEach(point => {
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(
+                point.col * CELL_SIZE + CELL_SIZE / 2,
+                point.row * CELL_SIZE + CELL_SIZE / 2,
+                CELL_SIZE / 3,
+                0,
+                2 * Math.PI
+            );
+            ctx.fill();
+        });
+
+        // Draw players
+        gameState.players.forEach((player, index) => {
+            if (!player.alive) return;
+
+            ctx.fillStyle = `hsl(${(index * 60) % 360}, 70%, 50%)`;
+            ctx.fillRect(
+                player.col * CELL_SIZE,
+                player.row * CELL_SIZE,
+                CELL_SIZE,
+                CELL_SIZE
+            );
+
+            ctx.fillStyle = `hsl(${(index * 60) % 360}, 70%, 70%)`;
+            player.tail.forEach(segment => {
+                ctx.fillRect(
+                    segment.col * CELL_SIZE,
+                    segment.row * CELL_SIZE,
+                    CELL_SIZE,
+                    CELL_SIZE
+                );
+            });
+
+            ctx.fillStyle = 'black';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(
+                player.name,
+                player.col * CELL_SIZE + CELL_SIZE / 2,
+                player.row * CELL_SIZE - 5
+            );
+        });
+    }, [gameState]);
 
     return (
-        <div
-            style={{
-                width: gridSize * cellSize,
-                height: gridSize * cellSize,
-                display: 'grid',
-                gridTemplateColumns: `repeat(${gridSize}, ${cellSize}px)`,
-                gap: '1px',
-                backgroundColor: '#333',
-            }}
-        >
-            {Array.from({ length: gridSize * gridSize }).map((_, index) => {
-                const row = Math.floor(index / gridSize);
-                const col = index % gridSize;
-
-                const player = gameState.players.find(p => p.row === row && p.col === col);
-                const glowPoint = gameState.glowPoints.find(gp => gp.row === row && gp.col === col);
-
-                let backgroundColor = '#000';
-                let content = '';
-
-                if (glowPoint) {
-                    backgroundColor = 'yellow';
-                    content = 'G';
-                }
-
-                if (player) {
-                    backgroundColor = player.id === 'P1' ? 'blue' : 'red';
-                    content = player.id;
-                }
-
-                return (
-                    <div
-                        key={index}
-                        style={{
-                            width: `${cellSize}px`,
-                            height: `${cellSize}px`,
-                            backgroundColor,
-                            border: '1px solid #333',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '6px',
-                            color: 'white',
-                            overflow: 'hidden',
-                            textAlign: 'center',
-                        }}
-                    >
-                        {content}
-                    </div>
-                );
-            })}
-        </div>
+        <canvas
+            ref={canvasRef}
+            width={GRID_SIZE * CELL_SIZE}
+            height={GRID_SIZE * CELL_SIZE}
+            style={{ border: '1px solid black', backgroundColor: '#f0f0f0' }}
+        />
     );
 };
 
