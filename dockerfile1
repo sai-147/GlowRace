@@ -1,0 +1,31 @@
+# Step 1: Build the Vite app
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files FROM the frontend folder
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the frontend code
+COPY frontend/ ./
+
+# Build the Vite app
+RUN npm run build
+
+# Step 2: Serve the built app using nginx
+FROM nginx:alpine
+
+# Clean nginx default HTML
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy the built dist folder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port
+EXPOSE 80
+
+# Run nginx
+CMD ["nginx", "-g", "daemon off;"]

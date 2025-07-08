@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Home() {
@@ -7,23 +7,43 @@ function Home() {
   const [roomType, setRoomType] = useState("public"); // Default to public room
   const [joinRoomId, setJoinRoomId] = useState(""); // For private room ID input
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const intervalRef = useRef(null);
 
-  // Fetch public rooms on component mount
+  // Fetch public rooms function
+  const fetchPublicRooms = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/list_public_rooms");
+      if (!response.ok) {
+        throw new Error("Failed to fetch public rooms");
+      }
+      const data = await response.json();
+      setPublicRooms(data.rooms || []);
+      setError(null); // Clear any previous errors
+    } catch (error) {
+      console.error("Error fetching public rooms:", error);
+      setError("Failed to load public rooms. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Set up polling for public rooms
   useEffect(() => {
-    const fetchPublicRooms = async () => {
-      try {
-        const response = await fetch("http://localhost:8000/list_public_rooms");
-        if (!response.ok) {
-          throw new Error("Failed to fetch public rooms");
-        }
-        const data = await response.json();
-        setPublicRooms(data.rooms || []);
-      } catch (error) {
-        console.error("Error fetching public rooms:", error);
-        setError("Failed to load public rooms. Please try again.");
+    // Initial fetch
+    fetchPublicRooms();
+
+    // Set up interval for periodic updates (every 5 seconds)
+    intervalRef.current = setInterval(() => {
+      fetchPublicRooms();
+    }, 5000);
+
+    // Cleanup interval on component unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
-    fetchPublicRooms();
   }, []);
 
   // Create a new room
@@ -37,6 +57,12 @@ function Home() {
         throw new Error("Failed to create room");
       }
       const data = await response.json();
+      
+      // If creating a public room, refresh the list immediately
+      if (roomType === "public") {
+        fetchPublicRooms();
+      }
+      
       navigate(`/game/${data.room_id}`);
     } catch (error) {
       console.error("Error creating room:", error);
@@ -61,11 +87,21 @@ function Home() {
         throw new Error(data.detail || "Failed to join room");
       }
       localStorage.setItem("playerId", existingPlayerId);
+      
+      // Refresh public rooms after joining
+      fetchPublicRooms();
+      
       navigate(`/game/${roomId}`);
     } catch (error) {
       console.error("Error joining room:", error);
       setError(error.message || "Failed to join room. Please try again.");
     }
+  };
+
+  // Manual refresh function
+  const refreshRooms = () => {
+    setIsLoading(true);
+    fetchPublicRooms();
   };
 
   return (
@@ -109,8 +145,19 @@ function Home() {
           </button>
         </div>
         <div>
-          <h2 className="text-xl font-semibold mb-2">Public Rooms</h2>
-          {publicRooms.length === 0 ? (
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-semibold">Public Rooms</h2>
+            <button
+              onClick={refreshRooms}
+              disabled={isLoading}
+              className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700 transition disabled:bg-gray-400"
+            >
+              {isLoading ? "Loading..." : "Refresh"}
+            </button>
+          </div>
+          {isLoading && publicRooms.length === 0 ? (
+            <p className="text-gray-600">Loading public rooms...</p>
+          ) : publicRooms.length === 0 ? (
             <p className="text-gray-600">No public rooms available</p>
           ) : (
             <ul className="space-y-2">
@@ -129,6 +176,9 @@ function Home() {
               ))}
             </ul>
           )}
+          <p className="text-xs text-gray-500 mt-2">
+            Updates automatically every 5 seconds
+          </p>
         </div>
       </div>
     </div>

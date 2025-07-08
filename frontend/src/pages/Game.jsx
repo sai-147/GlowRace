@@ -93,7 +93,8 @@ const Game = () => {
       if (!response.ok) {
         throw new Error("Failed to end game");
       }
-      // Navigate to results after successfully ending the game
+      // Clear local storage before navigating to results
+      localStorage.removeItem("playerId");
       navigate('/results', { state: { gameState } });
     } catch (error) {
       console.error("Error ending game:", error);
@@ -208,12 +209,22 @@ const Game = () => {
   useEffect(() => {
     if (gameState && playerId) {
       const player = gameState.players.find(player => player.id === playerId);
+      console.log("Current player state:", player); // Debugging log
       if (player && !player.alive) {
         console.log("Player died, navigating to results");
+        // Clear local storage before navigating to results
+        localStorage.removeItem("playerId");
         navigate('/results', { state: { gameState, playerScore: player.score } });
       } else if (gameState.gameOver) {
-        console.log("Game over, navigating to results");
-        navigate('/results', { state: { gameState, playerScore: player ? player.score : 0 } });
+        // Check if the current player is the last alive player
+        const alivePlayers = gameState.players.filter(p => p.alive).length;
+        if (alivePlayers === 0 || (player && !player.alive)) {
+          console.log("Game over with no alive players or current player dead, navigating to results");
+          localStorage.removeItem("playerId");
+          navigate('/results', { state: { gameState, playerScore: player ? player.score : 0 } });
+        } else {
+          console.log("Game over flagged, but player is still alive, staying in game");
+        }
       }
     }
   }, [gameState, playerId, navigate]);

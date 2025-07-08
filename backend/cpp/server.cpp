@@ -141,7 +141,7 @@ string gameStateToJson(const GameState& state) {
 }
 
 GameState loadGameState(const string& roomId) {
-    Client cli("localhost", 8000);
+    Client cli("backend", 8000);
     cli.set_connection_timeout(2);
     cli.set_read_timeout(2);
     cli.set_write_timeout(2);
@@ -200,7 +200,7 @@ GameState loadGameState(const string& roomId) {
 }
 
 bool checkResetFlag(const string& roomId) {
-    Client cli("localhost", 8000);
+    Client cli("backend", 8000);
     cli.set_connection_timeout(2);
     cli.set_read_timeout(2);
     cli.set_write_timeout(2);
@@ -214,7 +214,7 @@ bool checkResetFlag(const string& roomId) {
 
 void sendGameState(const string& roomId) {
     cout << "Attempting to send game state for room " << roomId << " to FastAPI" << endl;
-    Client cli("localhost", 8000);
+    Client cli("backend", 8000);
     cli.set_connection_timeout(2);
     cli.set_read_timeout(2);
     cli.set_write_timeout(2);

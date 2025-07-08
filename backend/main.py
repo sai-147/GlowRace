@@ -20,14 +20,14 @@ app = FastAPI(title="GlowRace Backend")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173", "http://192.168.31.230:5173"],
+    allow_origins=["*"],  # Change to specific origins in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Redis client
-redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+redis_client = redis.Redis(host='redis', port=6379, db=0, decode_responses=True)
+
 
 # WebSocket connections: Dict[room_id, List[WebSocket]]
 connections: Dict[str, List[WebSocket]] = {}
@@ -52,21 +52,38 @@ class PlayerActionRequest(BaseModel):
 async def create_room(type: str):
     if type not in ["public", "private"]:
         raise HTTPException(status_code=400, detail="Invalid room type")
-    
+
+    # Scan Redis for rooms of the given type
+    cursor = 0
+    matching_keys = []
+    while True:
+        cursor, keys = await redis_client.scan(cursor=cursor, match="room:*", count=100)
+        for key in keys:
+            room_type = await redis_client.hget(key, "type")
+            if room_type and room_type.decode() == type:
+                matching_keys.append(key)
+        if cursor == 0:
+            break
+
+    if len(matching_keys) >= 10:
+        raise HTTPException(status_code=403, detail=f"Cannot create more than 10 {type} rooms")
+
+    # Create the room
     room_id = str(uuid.uuid4())
     room_data = {
         "type": type,
         "players": json.dumps([]),
         "game_state": json.dumps({"players": [], "glowPoints": [], "gameOver": False})
     }
-    
+
     await redis_client.hset(f"room:{room_id}", mapping=room_data)
     await redis_client.expire(f"room:{room_id}", ROOM_EXPIRY)
-    
+
     connections[room_id] = []
-    
+
     logger.info(f"Created room {room_id} of type {type}")
     return JSONResponse({"room_id": room_id})
+
 
 # Join an existing room
 @app.post("/join_room")
@@ -120,6 +137,10 @@ async def list_public_rooms():
                         await redis_client.delete(key)
                         logger.info(f"Deleted room {room_id} due to gameOver and no active players")
                         continue
+                if player_count == 0:
+                    await redis_client.delete(key)
+                    logger.info(f"Deleted room {room_id} due to gameOver and no active players")
+                    continue
                 rooms.append({"room_id": room_id, "player_count": player_count})
         if cursor == 0:
             break
@@ -187,7 +208,7 @@ async def load_state(room_id: str):
 async def player_action(action: PlayerActionRequest):
     async with httpx.AsyncClient(timeout=5.0) as client:
         try:
-            response = await client.post("http://localhost:9000/update", json=action.dict(exclude_none=True))
+            response = await client.post("http://cpp-server:9000/update", json=action.dict(exclude_none=True))
             response.raise_for_status()
             logger.info(f"Action sent to C++ server for room {action.room_id}: {action}")
             return response.json()
@@ -232,7 +253,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             data = await websocket.receive_json()
             async with httpx.AsyncClient(timeout=5.0) as client:
                 try:
-                    response = await client.post("http://localhost:9000/update", json=data)
+                    response = await client.post("http://cpp-server:9000/update", json=data)
                     response.raise_for_status()
                     updated_state = response.json()
                     await redis_client.hset(room_key, "game_state", json.dumps(updated_state))

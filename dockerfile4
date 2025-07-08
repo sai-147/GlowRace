@@ -1,0 +1,24 @@
+# Use an official Ubuntu base image
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory inside container
+WORKDIR /app
+
+# Copy your cpp source and CMakeLists.txt into container
+COPY backend/cpp /app
+
+# Create build directory fresh inside Docker image
+RUN rm -rf build && mkdir build
+
+# Build inside the clean build directory
+RUN cd build && cmake .. && cmake --build .
+
+
+# Set default command to run your executable (update executable_name)
+CMD ["./build/server"]
