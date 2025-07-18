@@ -3,6 +3,11 @@
 **GlowRace** is a real-time multiplayer snake-like game where players compete to collect glow points in public or private rooms. Featuring a modern tech stack, it delivers fast, responsive gameplay through seamless frontend, backend, and C++ game server integration.
 
 ---
+# Demo
+
+
+https://github.com/user-attachments/assets/7b816f5c-4aba-4612-8db5-ca4860c3751a
+
 
 ## 🚀 Features
 
